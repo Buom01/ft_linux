@@ -8,35 +8,36 @@ echo Installing needed package
 sudo pacman -Sy --needed bc parted base-devel wget || exit 1
 
 
-if [ ! -f $kernel_version_file ]; then
-  echo Downloading the kernel
-  wget https://cdn.kernel.org/pub/linux/kernel/v4.x/$kernel_version_file || exit 1
-fi
-
-if [ ! -d $kernel_version ]; then
-  echo Extracting the kernel
-  tar xf $kernel_version_file || exit 1
-fi
-
-cd $kernel_version
-
-
-# https://www.linuxfromscratch.org/lfs/view/stable/chapter10/kernel.html
-if [ ! -f .config ]; then
-  echo "Cleaning up the extracted tar" 
-  make mrproper || exit 1
-
-
-  echo "Using the default config"
-  make defconfig || exit 1
-fi
-
-echo Launching compilation
-make || exit 1
-
-cd ..
-
 if [ ! -f $image_file ]; then
+
+  if [ ! -f $kernel_version_file ]; then
+    echo Downloading the kernel
+    wget https://cdn.kernel.org/pub/linux/kernel/v4.x/$kernel_version_file || exit 1
+  fi
+
+  if [ ! -d $kernel_version ]; then
+    echo Extracting the kernel
+    tar xf $kernel_version_file || exit 1
+  fi
+
+  cd $kernel_version
+
+
+  # https://www.linuxfromscratch.org/lfs/view/stable/chapter10/kernel.html
+  if [ ! -f .config ]; then
+    echo "Cleaning up the extracted tar" 
+    make mrproper || exit 1
+
+
+    echo "Using the default config"
+    make defconfig || exit 1
+  fi
+
+  echo Launching compilation
+  make || exit 1
+
+  cd ..
+
   echo Creating the image disk
 
   dd if=/dev/zero of=$image_file bs=1M count=8192 || exit 1
