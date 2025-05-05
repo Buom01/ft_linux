@@ -1,14 +1,16 @@
 #!/bin/sh
 
+LFS=$(pwd)/system
+BFS=$(pwd)/boot
+SFS=$(pwd)/swap
 kernel_version="linux-4.19.325"
 kernel_version_file=$kernel_version.tar.gz
 image_file=ft_linux.img  # It could be replaced with local disk, but for obvious reasons (avoid accidents, no need for a VM), I prefer to work on a image.
 
-echo Installing needed package
-sudo pacman -Sy --needed bc parted base-devel wget || exit 1
-
-
 if [ ! -f $image_file ]; then
+
+  echo Installing needed package
+  sudo pacman -Sy --needed bc parted base-devel wget || exit 1
 
   if [ ! -f $kernel_version_file ]; then
     echo Downloading the kernel
@@ -55,25 +57,27 @@ fi
 
 echo "Loopdisk at $loopdisk"
 
-echo "Formatting and mounting..."
+if ! mountpoint -q $LFS ; then
 
-if [ -d ./boot ]; then
-  sudo umount ./boot
-  sudo umount ./system
-  sudo umount ./swap
+  echo "Formatting and mounting..."
+
+  if [ -d $BFS ]; then
+    sudo umount $BFS
+    sudo umount $LFS
+    sudo umount $SFS
+  fi
+
+  mkdir -p $BFS $LFS $SFS
+
+  umask 022 # https://www.linuxfromscratch.org/lfs/view/stable/chapter02/aboutlfs.html
+
+  sudo mkfs.vfat "${loopdisk}p1"
+  sudo mkfs.ext4 "${loopdisk}p2"
+  sudo mkswap "${loopdisk}p3"
+  sudo mount -w "${loopdisk}p1" $BFS
+  sudo mount -w "${loopdisk}p2" $LFS
+
 fi
-
-mkdir -p boot system swap
-
-export LFS=$(pwd)/system
-export BFS=$(pwd)/boot
-umask 022 # https://www.linuxfromscratch.org/lfs/view/stable/chapter02/aboutlfs.html
-
-sudo mkfs.vfat "${loopdisk}p1"
-sudo mkfs.ext4 "${loopdisk}p2"
-sudo mkswap "${loopdisk}p3"
-sudo mount -w "${loopdisk}p1" $BFS
-sudo mount -w "${loopdisk}p2" $LFS
 
 sudo mkdir -p $BFS/efi $LFS/home $LFS/usr $LFS/opt $LFS/usr/src
 
